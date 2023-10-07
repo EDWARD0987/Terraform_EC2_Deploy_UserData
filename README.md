@@ -1,1 +1,2 @@
-# Terraform_EC2_Deploy_UserData
+# This script deploys an ec2 instance A SG open to the world and user data script 
+
