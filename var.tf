@@ -68,3 +68,8 @@ data "aws_iam_instance_profile" "ssm_role" { # This is how you attach an already
 
 }
 
+
+# variable "instance_id" {
+#   description = "The ID of the instance to register with the target group"
+#   type        = string
+# }

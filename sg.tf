@@ -67,6 +67,69 @@ resource "aws_lb" "alb" {
   )
 }
 
+
+
+resource "aws_lb_listener" "public-proxy" {
+  load_balancer_arn = aws_lb.alb.arn
+  port              = "80"
+  protocol          = "HTTP"
+
+  default_action {
+    type             = "forward"
+    target_group_arn = aws_lb_target_group.public-proxy.arn
+    
+  
+  }
+}
+
+# resource "aws_lb_listener" "public-proxy" {
+#   load_balancer_arn = aws_lb.alb.arn
+#   port              = "80"
+#   protocol          = "HTTP"
+
+#   default_action {
+#     type = "fixed-response"
+
+#     fixed_response {
+#       content_type = "text/plain"
+#       message_body = "This is the default response"
+#       status_code  = "200"
+#     }
+#   }
+# }
+
+resource "aws_lb_target_group" "public-proxy" {
+  name     = "${var.env}-public-proxy"
+  port     = 80
+  protocol = "HTTP"
+  vpc_id   = var.vpc_id
+
+  health_check {
+    port                = 80
+    protocol            = "HTTP"
+    healthy_threshold   = 2
+    unhealthy_threshold = 2
+    timeout             = 3
+    interval            = 30
+    matcher             = "200-499"
+    path                = "/"
+  }
+
+  tags = merge(
+    local.common_tags,
+    {
+      "Name" = "${var.ProjectName}-${var.env}-public-proxy",
+    },
+  )
+}
+
+# Register Targets
+resource "aws_lb_target_group_attachment" "example" {
+  target_group_arn = aws_lb_target_group.public-proxy.arn
+  target_id        = aws_instance.app_server_ec2.id  # or the IP address
+  port             = 80
+}
+
 resource "aws_security_group" "alb_sg" {
   name        = "${var.ProjectName}-${var.env}-alb-sg"
   description = "SG of ALB"
