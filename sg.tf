@@ -1,3 +1,5 @@
+
+# APPLICATION Server security group
 resource "aws_security_group" "app_server_sg" {
   name        = "${var.ProjectName}-${var.env}-app-server-sg"
   description = "SG of App Server"
@@ -42,12 +44,12 @@ resource "aws_security_group" "app_server_sg" {
 
 
 
-
+# ALB Resource
 resource "aws_lb" "alb" {
   name               = "${var.ProjectName}-${var.env}-alb"
   internal           = false
   load_balancer_type = "application"
-  security_groups    = [aws_security_group.alb_sg.id]
+  security_groups    = [aws_security_group.alb_sg.id, aws_security_group.app_server_sg.id]
   subnets            = ["subnet-0ff6ef8ee6908b8e3", "subnet-0f25e0b51c1f49cb9"] #[data.aws_subnets.public_subnet-01.id, data.aws_subnets.public_subnet-02.id] 
 
   enable_deletion_protection = false
@@ -68,7 +70,7 @@ resource "aws_lb" "alb" {
 }
 
 
-
+# ALB Listener
 resource "aws_lb_listener" "public-proxy" {
   load_balancer_arn = aws_lb.alb.arn
   port              = "80"
@@ -98,6 +100,8 @@ resource "aws_lb_listener" "public-proxy" {
 #   }
 # }
 
+
+# ALB Target group
 resource "aws_lb_target_group" "public-proxy" {
   name     = "${var.env}-public-proxy"
   port     = 80
@@ -126,10 +130,13 @@ resource "aws_lb_target_group" "public-proxy" {
 # Register Targets
 resource "aws_lb_target_group_attachment" "example" {
   target_group_arn = aws_lb_target_group.public-proxy.arn
-  target_id        = aws_instance.app_server_ec2.id  # or the IP address
+  target_id        = aws_instance.app_server_ec2.id        # or the IP address
   port             = 80
 }
 
+
+
+# ALB Security group
 resource "aws_security_group" "alb_sg" {
   name        = "${var.ProjectName}-${var.env}-alb-sg"
   description = "SG of ALB"
