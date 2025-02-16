@@ -17,6 +17,8 @@ provider "aws" {
   shared_credentials_files = ["~/.aws/credentials"]
   #profile = "account-sandbox"
 }
+
+data "aws_caller_identity" "current" {}
 resource "aws_instance" "app_server_ec2" {
   ami                    = data.aws_ami.amazon_linux.id    #"ami-067d1e60475437da2" 
   instance_type          = var.app_server_instance_type
@@ -25,6 +27,7 @@ resource "aws_instance" "app_server_ec2" {
   vpc_security_group_ids = [aws_security_group.app_server_sg.id]
   user_data              = filebase64("user_data.sh")
   iam_instance_profile   = data.aws_iam_instance_profile.ssm_role.role_name # Attach role created in var.tf here for role to populate on ec2
+   security_groups = [aws_security_group.app_server_sg.id, aws_security_group.alb_sg.id]
  
 
 
@@ -36,4 +39,14 @@ resource "aws_instance" "app_server_ec2" {
       "Name" = "${var.ProjectName}-${var.env}-ec2"
     },
   )
+}
+
+
+resource "aws_s3_bucket" "example" {
+  bucket = "${data.aws_caller_identity.current.account_id}-${var.ProjectName}"
+  
+  tags = {
+    Name        = "ExampleBucket"
+    CreatedBy   = data.aws_caller_identity.current.arn
+  }
 }
